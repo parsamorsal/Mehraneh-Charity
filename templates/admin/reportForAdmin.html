@@ -1,0 +1,506 @@
+﻿<!DOCTYPE html>
+{% load staticfiles %}
+<html lang="fa" dir="rtl">
+<head>
+    <title>گزارش فعالیت کاربران </title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href= {% static "css/reportForAdmin.css" %}>
+    <link rel="stylesheet" type="text/css" href= {% static "css/style.css" %}>
+    <link rel="stylesheet" href= {% static "css/ionicons.min.css" %}>
+</head>
+<body>
+<div class="main">
+    {% if not request.user.is_authenticated %}
+        <div id="checkspann" class="1"></div>
+    {% endif %}
+    {% if request.user.is_authenticated %}
+        {% if request.user.isOrg %}
+            <div id="checkspann" class="2"></div>
+        {% endif %}
+        {% if request.user.isBen %}
+            <div id="checkspann" class="3"></div>
+        {% endif %}
+        {% if not request.user.isOrg and not request.user.isBen %}
+            <div id="checkspann" class="4"></div>
+        {% endif %}
+    {% endif %}
+    <div class="header">
+        <div class="topmenu" id="topmenu">
+            {% if request.user.is_authenticated %}
+                <div class="container">
+                    <div class="topPhoto">
+                        <img src="../{{ request.user.image }}">
+                    </div>
+                    <div class="topmenuelements">
+                        {% if request.user.isOrg %}
+                            <a href={% url 'profile' request.user.username %}>{{ request.user.organizer.name }}</a>
+                        {% endif %}
+                        {% if request.user.isBen %}
+                            <a href={% url 'profile' request.user.username %}>{{ request.user.benefactor.name }} {{ request.user.benefactor.surname }}</a>
+                        {% endif %}
+                    </div>
+                    <div class="topmenudate">
+                        <a href="{% url 'logout' %}">خروج</a>
+                    </div>
+                    <div class="logo">
+                        <img src="../../static/images/logo.png">
+                    </div>
+                </div>
+            {% endif %}
+            {% if not request.user.is_authenticated %}
+                <div class="container">
+                    <div class="topmenudate">
+                        <h3>شما هنوز وارد نشده‌اید،</h3>
+                    </div>
+                    <div class="topmenudate">
+                        <button onclick="popup()">ورود</button>
+                    </div>
+                    <div class="topmenudate">
+                        <button onclick="popupregister()">ثبت نام</button>
+                    </div>
+                    <div class="logo">
+                        <img src="../../static/images/logo.png">
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="mainPage">
+        <div class="wrapper"></div>
+        <div id="test">
+            <div class="wrappers">
+                <form class="login" method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <button id="button2" class="exit1" onclick="popdown()">x</button>
+                    <p class="title">ورود</p>
+                    <p>
+                        <input type="text" placeholder="نام کاربری" class="login-text" name="username">
+                        <i class="ion-person"></i>
+                    </p>
+                    <p>
+                        <input type="password" placeholder="رمز عبور" class="login-text" name="password">
+                        <i class="ion-ios-locked"></i>
+                    </p>
+                    <div class="enter">
+                        <button>ورود</button>
+                    </div>
+                    <a href={% url 'password_reset' %} class="forget">فراموشی رمز عبور</a>
+
+                    <p> اگر هنوز حساب کاربری برای خود ایجاد نکرده‌اید، </p>
+                    <button class="reg" id="buttonreg" onclick="popupregister()">ثبت نام</button>
+                    <p>کنید</p>
+                </form>
+            </div>
+        </div>
+
+        <div id="testreg">
+            <div class="wrappers">
+                <form class="register">
+                    <button id="buttonreg2" class="exit" onclick="popdownregister()">x</button>
+                    <p class="title">ثبت نام</p>
+                    <div class="enter"><a href="{% url 'register' %}">نیکوکار</a></div>
+                    <div class="enter"><a href="{% url 'registerOrg' %}">موسسه</a></div>
+                </form>
+            </div>
+        </div>
+        <div class="nav" id="nav"></div>
+        <div class="container">
+            <div class="filter">
+                <form method="post">
+                    {% csrf_token %}
+                <p>گزارش فعالیت کاربران</p>
+                <div class="controlsSelect">
+                    <i class="ion-navicon"></i>
+                    <select id="field" name="field"></select>
+                </div>
+                <div class="controls">
+                    <input name="orgName" type="text" placeholder="نام موسسه">
+                </div>
+                <div class="controls">
+                    <input name="beneName" type="text" placeholder="نام نیکوکار">
+                </div>
+                <button class="mybutton" onclick="this.form.submit()">اعمال تغییرات</button>
+                </form>
+            </div>
+            <div id="result">
+                <ul id="tempUl" style="display: none">{% for report in reports %}{% if report.type == "2" and not report.isAtHome %}<li value="{{ report.id }}"></li>{% endif %}{% endfor %}</ul>
+                <ul id="tempUl1" style="display: none">{% for report in reports %}{% if report.type == "1" %}<li value="{{ report.id }}"></li>{% endif %}{% endfor %}</ul>
+                {% for report in reports %}
+                    <div class="report" style="display: flex;">
+                        <div style="width: 25%" class="people">
+                            {% if report.operator == "1" %}
+                                <span class="benefactor">{{ report.benefactor.benefactor.nickname }}: نیکوکار</span>
+                                <span class="organization">{{ report.organization.organizer.name }} : موسسه</span>
+                            {% endif %}
+                            {% if report.operator == "2" %}
+                                <span class="organization">{{ report.organization.organizer.name }}: موسسه</span>
+                                <span class="benefactor">{{ report.benefactor.benefactor.nickname }}: نیکوکار</span>
+                            {% endif %}
+                            {% if report.operator == "3" %}
+                                <span class="benefactor">{{ report.benefactor.benefactor.nickname }}: نیکوکار</span>
+                            {% endif %}
+                            {% if report.operator == "4" %}
+                                <span class="organization">{{ report.organization.organizer.name }}: موسسه</span>
+                            {% endif %}
+                            {% if report.type == "1" %}
+                                <span class="type">امتیازدهی</span>
+                            {% endif %}
+                            {% if report.type == "2" %}
+                                <span class="type">پیشنهاد همکاری</span>
+                            {% endif %}
+                            {% if report.type == "3" %}
+                                <span class="type">کمک مالی</span>
+                            {% endif %}
+                            {% if report.type == "4" %}
+                                <span class="type">ویرایش حساب کاربری</span>
+                            {% endif %}
+                            <span class="type">{{ report.date }}-{{ report.time }}</span>
+                        </div>
+                        <div class="mid" style="width: 45%">
+                        {% if report.type == "1" %}
+                            <div style="width: 100%" class="rating">
+                                <table id="ratingTable">
+                                    <tr id="tr1">
+                                        <td class="firstTd">فعالیت اعضا</td>
+                                        <td>{{ report.rateId.f1 }}</td>
+                                    </tr>
+                                    <tr id="tr2">
+                                        <td class="firstTd">مسئولیت پذیری</td>
+                                        <td>{{ report.rateId.f2 }}</td>
+                                    </tr>
+                                    <tr id="tr3">
+                                        <td class="firstTd">صداقت</td>
+                                        <td>{{ report.rateId.f3 }}</td>
+                                    </tr>
+                                    <tr id="tr4">
+                                        <td class="firstTd">تعهد</td>
+                                        <td>{{ report.rateId.f4 }}</td>
+                                    </tr>
+                                    <tr id="tr5">
+                                        <td class="firstTd">جو</td>
+                                        <td>{{ report.rateId.f5 }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        {% endif %}
+                        {% if report.type == "2" %}
+                            {% if report.isAtHome %}
+                                <h4 style="text-align: center; display: block">دورکاری</h4>
+                            {% endif %}
+                            {% if not report.isAtHome %}
+                            <table id="tab" style="font-size: 10px">
+                                <tbody>
+                                <tr>
+                                    <td></td>
+                                    <td> 8-10</td>
+                                    <td> 10-12</td>
+                                    <td> 12-15</td>
+                                    <td> 15-17</td>
+                                </tr>
+                                <tr>
+                                    <td>شنبه</td>
+                                    <td><span id="a{{ report.id }}a11" onclick="week({{ report.id }},11,0)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a12" onclick="week({{ report.id }},12,1)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a13" onclick="week({{ report.id }},13,2)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a14" onclick="week({{ report.id }},14,3)"
+                                              value="1"></span></td>
+                                </tr>
+                                <tr>
+                                    <td>یکشنبه</td>
+                                    <td><span id="a{{ report.id }}a21" onclick="week({{ report.id }},21,4)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a22" onclick="week({{ report.id }},22,5)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a23" onclick="week({{ report.id }},23,6)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a24" onclick="week({{ report.id }},24,7)"
+                                              value="1"></span></td>
+                                </tr>
+                                <tr>
+                                    <td>دوشنبه</td>
+                                    <td><span id="a{{ report.id }}a31" onclick="week({{ report.id }},31,8)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a32" onclick="week({{ report.id }},32,9)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a33" onclick="week({{ report.id }},33,10)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a34" onclick="week({{ report.id }},34,11)"
+                                              value="1"></span></td>
+                                </tr>
+                                <tr>
+                                    <td>سه‌شنبه</td>
+                                    <td><span id="a{{ report.id }}a41" onclick="week({{ report.id }},41,12)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a42" onclick="week({{ report.id }},42,13)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a43" onclick="week({{ report.id }},43,14)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a44" onclick="week({{ report.id }},44,15)"
+                                              value="1"></span></td>
+                                </tr>
+                                <tr>
+                                    <td>چهارشنبه</td>
+                                    <td><span id="a{{ report.id }}a51" onclick="week({{ report.id }},51,16)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a52" onclick="week({{ report.id }},52,17)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a53" onclick="week({{ report.id }},53,18)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a54" onclick="week({{ report.id }},54,19)"
+                                              value="1"></span></td>
+                                </tr>
+                                <tr>
+                                    <td>پنجشنبه</td>
+                                    <td><span id="a{{ report.id }}a61" onclick="week({{ report.id }},61,20)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a62" onclick="week({{ report.id }},62,21)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a63" onclick="week({{ report.id }},63,22)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a64" onclick="week({{ report.id }},64,23)"
+                                              value="1"></span></td>
+                                </tr>
+                                <tr>
+                                    <td> جمعه</td>
+                                    <td><span id="a{{ report.id }}a71" onclick="week({{ report.id }},71,24)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a72" onclick="week({{ report.id }},72,25)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a73" onclick="week({{ report.id }},73,26)"
+                                              value="1"></span></td>
+                                    <td><span id="a{{ report.id }}a74" onclick="week({{ report.id }},74,27)"
+                                              value="1"></span></td>
+                                </tr>
+                                </tbody>
+                                <h5 id="tab2" style="display: none">لطفا زمان‌های غیرفعال خود را علامت بزنید</h5>
+                            </table>
+                            {% if report.wId.c0 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b0" id="a{{ report.id }}b0"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c0 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b0" id="a{{ report.id }}b0"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c1 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b1" id="a{{ report.id }}b1"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c1 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b1" id="a{{ report.id }}b1"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c2 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b2" id="a{{ report.id }}b2"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c2 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b2" id="a{{ report.id }}b2"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c3 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b3" id="a{{ report.id }}b3"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c3 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b3" id="a{{ report.id }}b3"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c4 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b4" id="a{{ report.id }}b4"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c4 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b4" id="a{{ report.id }}b4"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c5 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b5" id="a{{ report.id }}b5"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c5 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b5" id="a{{ report.id }}b5"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c6 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b6" id="a{{ report.id }}b6"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c6 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b6" id="a{{ report.id }}b6"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c7 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b7" id="a{{ report.id }}b7"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c7 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b7" id="a{{ report.id }}b7"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c8 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b8" id="a{{ report.id }}b8"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c8 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b8" id="a{{ report.id }}b8"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c9 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b9" id="a{{ report.id }}b9"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c9 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b9" id="a{{ report.id }}b9"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c10 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b10" id="a{{ report.id }}b10"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c10 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b10" id="a{{ report.id }}b10"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c11 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b11" id="a{{ report.id }}b11"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c11 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b11" id="a{{ report.id }}b11"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c12 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b12" id="a{{ report.id }}b12"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c12 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b12" id="a{{ report.id }}b12"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c13 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b13" id="a{{ report.id }}b13"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c13 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b13" id="a{{ report.id }}b13"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c14 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b14" id="a{{ report.id }}b14"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c14 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b14" id="a{{ report.id }}b14"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c15 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b15" id="a{{ report.id }}b15"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c15 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b15" id="a{{ report.id }}b15"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c16 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b16" id="a{{ report.id }}b16"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c16 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b16" id="a{{ report.id }}b16"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c17 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b17" id="a{{ report.id }}b17"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c17 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b17" id="a{{ report.id }}b17"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c18 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b18" id="a{{ report.id }}b18"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c18 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b18" id="a{{ report.id }}b18"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c19 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b19" id="a{{ report.id }}b19"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c19 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b19" id="a{{ report.id }}b19"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c20 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b20" id="a{{ report.id }}b20"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c20 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b20" id="a{{ report.id }}b20"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c21 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b21" id="a{{ report.id }}b21"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c21 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b21" id="a{{ report.id }}b21"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c22 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b22" id="a{{ report.id }}b22"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c22 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b22" id="a{{ report.id }}b22"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c23 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b23" id="a{{ report.id }}b23"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c23 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b23" id="a{{ report.id }}b23"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c24 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b24" id="a{{ report.id }}b24"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c24 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b24" id="a{{ report.id }}b24"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c25 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b25" id="a{{ report.id }}b25"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c25 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b25" id="a{{ report.id }}b25"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c26 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b26" id="a{{ report.id }}b26"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c26 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b26" id="a{{ report.id }}b26"
+                                       style="display: none">{% endif %}
+                            {% if report.wId.c27 == "on" %}
+                                <input type="checkbox" name="a{{ report.id }}b27" id="a{{ report.id }}b27"
+                                       style="display: none" checked>{% endif %}
+                            {% if report.wId.c27 == "off" %}
+                                <input type="checkbox" name="a{{ report.id }}b27" id="a{{ report.id }}b27"
+                                       style="display: none">{% endif %}
+                            {% endif %}
+
+                        {% endif %}
+                        {% if report.type == "3" %}
+                            <div class="proj">
+                                <h3>مبلغ: {{ report.payment }}</h3>
+                            </div>
+                        {% endif %}
+                        </div>
+
+                        <div class="more" style="width: 25%">
+                            {% if report.description != None %}
+                            <h3>{{ report.description }}</h3>
+                            {% endif %}
+                            {% if report.type == "1" or report.type == "2" %}
+                                <button class="remove" onclick="showRemove({{ report.id }})">حذف</button>
+
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div id="testreg{{ report.id }}" style="display: none; margin-top: 300px">
+                        <div class="wrappers">
+                            <form class="register" id="formRemove{{ report.id }}" action="{% url 'remove_report' report.id %}">
+                                <button class="exit" onclick="popdownregisters({{ report.id }})">x</button>
+                                <input type="text" value="{{ report.id }}" style="display: none;">
+                                <p class="title">گزارش از لیست گزارش‌ها حذف شود؟</p>
+                                <div class="enter">
+                                    <button class="yes" onclick="this.form.submit()">بله</button>
+                                </div>
+                                <div class="enter">
+                                    <button id="not{{ report.id }}"
+                                            onclick="popdownregisters({{ report.id }})">خیر
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="container">
+            <div class="addr">
+                <h4> خیابان آزادی، بلوار اکبری، خیابان قاسمی، پلاک ۳۶، واحد ۲ </h4>
+                <h4>تلفن: ۰۲۱۸۸۳۴۲۸۹۱</h4>
+            </div>
+        </div>
+        <div class="copy">
+            <h4>کپی‌رایت رعایت شود.</h4>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src={% static "js/reportForAdmin.js" %}></script>
+<script type="text/javascript" src={% static "js/main.js" %}></script>
+<script src={% static "js/jquery.min.js" %}></script>
+</body>
+</html>
